@@ -12,6 +12,9 @@ type PathCommand
     | Line Coord
     | End
 
+type Bounds
+    = Bounds Coord Coord
+
 getX : Coord -> Int
 getX (Coord x y) =
     x
