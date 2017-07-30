@@ -8,6 +8,7 @@ import Svg.Attributes exposing (..)
 import AnimationFrame exposing (times)
 import Time exposing (Time, inSeconds, inMilliseconds, every, millisecond)
 import Space exposing (..)
+import Obstacles exposing (..)
 import Json.Decode
 
 
@@ -34,6 +35,7 @@ type alias Whale =
 type alias Game =
     { whale : Whale
     , direction : Int
+    , obstacles: Obstacles
     }
 
 
@@ -58,18 +60,20 @@ init =
         leftGame =
             { whale = whale
             , direction = -1
+            , obstacles = leftGameObstacles
             }
 
         rightGame =
             { whale = whale
             , direction = 1
+            , obstacles = rightGameObstacles
             }
     in
         ( { leftGame = leftGame
           , rightGame = rightGame
           , time = 0.0
           , phase = 0
-          , dist = 0
+          , dist = -1300
           }
         , Cmd.none
         )
@@ -185,7 +189,7 @@ view model =
                 Bounds (Coord 10 10) (Coord ((lWidth // 2) - 10) (lHeight - 10))
 
             rightGameBounds =
-                Bounds (Coord (lWidth // 2) 10) (Coord (lWidth - 10) (lHeight - 10))
+                Bounds (Coord ((lWidth // 2) + 10) 10) (Coord (lWidth - 10) (lHeight - 10))
           in
             svg
                 [ version "1.1"
@@ -195,7 +199,11 @@ view model =
                 , baseProfile "full"
                 , viewBox ("0 0 " ++ (toString lWidth) ++ " " ++ (toString lHeight))
                 ]
-                [ Svg.rect
+                [ Svg.defs []
+                    [ boundsToClipPath leftGameBounds "leftGameClip"
+                    , boundsToClipPath rightGameBounds "rightGameClip"
+                    ]
+                , Svg.rect
                     [ x "2"
                     , y "2"
                     , width (toString (lWidth - 2))
@@ -204,20 +212,34 @@ view model =
                     , stroke "gray"
                     ]
                     []
-                , game model.leftGame leftGameBounds model.phase
-                , game model.rightGame rightGameBounds model.phase
+                , game model.leftGame leftGameBounds model.phase model.dist
+                , game model.rightGame rightGameBounds model.phase model.dist
                 ]
         ]
 
+boundsToClipPath : Bounds -> String -> Html Msg
+boundsToClipPath (Bounds (Coord x1 y1) (Coord x2 y2)) clipId =
+  let
+    w = x2 - x1
+    h = y2 - y1
+  in
+    Svg.clipPath [id clipId]
+      [ Svg.rect
+          [ x (toString x1)
+          , y (toString y1)
+          , width (toString w)
+          , height (toString h)
+          ] []
+      ]
 
 onKeyDown : (Int -> Msg) -> Html.Attribute Msg
 onKeyDown tagger =
     on "keydown" (Json.Decode.map tagger keyCode)
 
 
-game : Game -> Bounds -> Int -> Html Msg
-game { whale, direction } bounds globalPhase =
-    Svg.g []
+game : Game -> Bounds -> Int -> Int-> Html Msg
+game { whale, direction, obstacles } bounds globalPhase dist =
+    Svg.g [Svg.Attributes.clipPath (if direction == -1 then "url(#leftGameClip)" else "url(#rightGameClip)")]
         [ case bounds of
             Bounds (Coord x1 y1) (Coord x2 y2) ->
                 Svg.rect
@@ -230,6 +252,7 @@ game { whale, direction } bounds globalPhase =
                     ]
                     []
         , whaleBody whale bounds direction globalPhase
+        , obstaclesView obstacles bounds direction dist
         ]
 
 
@@ -315,3 +338,25 @@ whaleBody { phase, posX, posY } (Bounds (Coord x1 y1) (Coord x2 y2)) direction g
                 ]
                 []
             ]
+
+obstaclesView : Obstacles -> Bounds -> Int -> Int -> Html Msg
+obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist =
+    let
+      oStart (Obstacle start shapes) = start
+      isActive obstacle = (oStart obstacle) < dist + (bx2 - bx1) && (oStart obstacle) + 300 > dist
+      active = List.filter (isActive) obstacles
+      renderShape start shape = case shape of
+        Circle coord r  -> renderCircle start coord r
+        Rect coord w h -> renderRect start coord w h
+      renderCircle start (Coord x y) r =
+        Svg.circle [] []
+      renderRect start (Coord x1 y1) w h =
+        let
+          fx1 = if direction == -1 then bx1 + start + x1 - dist else bx2 - start - w - x1 + dist
+          fy1 = y1
+        in
+          Svg.rect [x (toString fx1), y (toString fy1), width (toString w), height (toString h), fill "red"] []
+      render (Obstacle start shapes ) =
+        Svg.g [] (List.map (\s -> renderShape start s) shapes)
+    in
+      Svg.g [] (List.map render active)
