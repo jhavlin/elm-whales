@@ -35,7 +35,7 @@ type alias Whale =
 type alias Game =
     { whale : Whale
     , direction : Int
-    , obstacles: Obstacles
+    , obstacles : Obstacles
     }
 
 
@@ -132,10 +132,18 @@ moveInGame game direction =
 moveWhale : Whale -> Int -> Whale
 moveWhale whale direction =
     let
-      rawPos = whale.posY + (direction * 5)
-      pos = if rawPos < 0 then 0 else if rawPos > 900 then 900 else rawPos
+        rawPos =
+            whale.posY + (direction * 5)
+
+        pos =
+            if rawPos < 0 then
+                0
+            else if rawPos > 900 then
+                900
+            else
+                rawPos
     in
-      { whale | posY = pos }
+        { whale | posY = pos }
 
 
 timeToPhase : Time -> Int
@@ -217,29 +225,42 @@ view model =
                 ]
         ]
 
+
 boundsToClipPath : Bounds -> String -> Html Msg
 boundsToClipPath (Bounds (Coord x1 y1) (Coord x2 y2)) clipId =
-  let
-    w = x2 - x1
-    h = y2 - y1
-  in
-    Svg.clipPath [id clipId]
-      [ Svg.rect
-          [ x (toString x1)
-          , y (toString y1)
-          , width (toString w)
-          , height (toString h)
-          ] []
-      ]
+    let
+        w =
+            x2 - x1
+
+        h =
+            y2 - y1
+    in
+        Svg.clipPath [ id clipId ]
+            [ Svg.rect
+                [ x (toString x1)
+                , y (toString y1)
+                , width (toString w)
+                , height (toString h)
+                ]
+                []
+            ]
+
 
 onKeyDown : (Int -> Msg) -> Html.Attribute Msg
 onKeyDown tagger =
     on "keydown" (Json.Decode.map tagger keyCode)
 
 
-game : Game -> Bounds -> Int -> Int-> Html Msg
+game : Game -> Bounds -> Int -> Int -> Html Msg
 game { whale, direction, obstacles } bounds globalPhase dist =
-    Svg.g [Svg.Attributes.clipPath (if direction == -1 then "url(#leftGameClip)" else "url(#rightGameClip)")]
+    Svg.g
+        [ Svg.Attributes.clipPath
+            (if direction == -1 then
+                "url(#leftGameClip)"
+             else
+                "url(#rightGameClip)"
+            )
+        ]
         [ case bounds of
             Bounds (Coord x1 y1) (Coord x2 y2) ->
                 Svg.rect
@@ -339,24 +360,44 @@ whaleBody { phase, posX, posY } (Bounds (Coord x1 y1) (Coord x2 y2)) direction g
                 []
             ]
 
+
 obstaclesView : Obstacles -> Bounds -> Int -> Int -> Html Msg
 obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist =
     let
-      oStart (Obstacle start shapes) = start
-      isActive obstacle = (oStart obstacle) < dist + (bx2 - bx1) && (oStart obstacle) + 300 > dist
-      active = List.filter (isActive) obstacles
-      renderShape start shape = case shape of
-        Circle coord r  -> renderCircle start coord r
-        Rect coord w h -> renderRect start coord w h
-      renderCircle start (Coord x y) r =
-        Svg.circle [] []
-      renderRect start (Coord x1 y1) w h =
-        let
-          fx1 = if direction == -1 then bx1 + start + x1 - dist else bx2 - start - w - x1 + dist
-          fy1 = y1
-        in
-          Svg.rect [x (toString fx1), y (toString fy1), width (toString w), height (toString h), fill "red"] []
-      render (Obstacle start shapes ) =
-        Svg.g [] (List.map (\s -> renderShape start s) shapes)
+        oStart (Obstacle start shapes) =
+            start
+
+        isActive obstacle =
+            (oStart obstacle) < dist + (bx2 - bx1) && (oStart obstacle) + 300 > dist
+
+        active =
+            List.filter (isActive) obstacles
+
+        renderShape start shape =
+            case shape of
+                Circle coord r ->
+                    renderCircle start coord r
+
+                Rect coord w h ->
+                    renderRect start coord w h
+
+        renderCircle start (Coord x y) r =
+            Svg.circle [] []
+
+        renderRect start (Coord x1 y1) w h =
+            let
+                fx1 =
+                    if direction == -1 then
+                        bx1 + start + x1 - dist
+                    else
+                        bx2 - start - w - x1 + dist
+
+                fy1 =
+                    y1
+            in
+                Svg.rect [ x (toString fx1), y (toString fy1), width (toString w), height (toString h), fill "red" ] []
+
+        render (Obstacle start shapes) =
+            Svg.g [] (List.map (\s -> renderShape start s) shapes)
     in
-      Svg.g [] (List.map render active)
+        Svg.g [] (List.map render active)
