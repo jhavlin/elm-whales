@@ -18,22 +18,24 @@ type PathCommand
 type Bounds
     = Bounds Coord Coord
 
+
 type alias WhaleCoords =
-  { start : Coord
-  , topBodyCP1 : Coord
-  , topBodyCP2 : Coord
-  , topBodyEnd : Coord
-  , topTailCP : Coord
-  , topTailEnd: Coord
-  , tailMiddle : Coord
-  , lowTailStart : Coord
-  , lowTailCP : Coord
-  , lowTailEnd : Coord
-  , lowBodyCP1 : Coord
-  , lowBodyCP2 : Coord
-  , lowBodyEnd : Coord
-  , eye: Coord
-  }
+    { start : Coord
+    , topBodyCP1 : Coord
+    , topBodyCP2 : Coord
+    , topBodyEnd : Coord
+    , topTailCP : Coord
+    , topTailEnd : Coord
+    , tailMiddle : Coord
+    , lowTailStart : Coord
+    , lowTailCP : Coord
+    , lowTailEnd : Coord
+    , lowBodyCP1 : Coord
+    , lowBodyCP2 : Coord
+    , lowBodyEnd : Coord
+    , eye : Coord
+    }
+
 
 getX : Coord -> Int
 getX (Coord x y) =

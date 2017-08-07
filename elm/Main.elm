@@ -278,33 +278,42 @@ game { whale, direction, obstacles } bounds globalPhase dist =
 
 
 whaleCoords : Whale -> Int -> WhaleCoords
-whaleCoords {phase, posX, posY} globalPhase =
-  let
-    lPhase = globalPhase + phase
-  in
-    { start = Coord (posX - 0) (posY - 0)
-    , topBodyCP1 = Coord (posX - 80) (posY - 180)
-    , topBodyCP2 = Coord (posX - 100) (posY - 30)
-    , topBodyEnd = Coord (posX - 250) (posY + (0 + (lPhase // 1)))
-    , topTailCP = Coord (posX - 275) (posY + (-100 + (lPhase // 1)))
-    , topTailEnd = Coord (posX - 300) (posY + (-50 + (lPhase // 1)))
-    , tailMiddle = Coord (posX - 275) (posY + (0 + (lPhase // 1)))
-    , lowTailStart = Coord (posX - 300) (posY + (40 + (lPhase // 1)))
-    , lowTailCP = Coord (posX - 275) (posY + (80 + (lPhase // 1)))
-    , lowTailEnd = Coord (posX - 250) (posY + (10 + (lPhase // 1)))
-    , lowBodyCP1 = Coord (posX - 100) (posY + 100)
-    , lowBodyCP2 = Coord (posX - 30) (posY + 90)
-    , lowBodyEnd = Coord (posX - 0) (posY + 0)
-    , eye = Coord (posX - 35) (posY - 10)
-    }
+whaleCoords { phase, posX, posY } globalPhase =
+    let
+        lPhase =
+            globalPhase + phase
+    in
+        { start = Coord (posX - 0) (posY - 0)
+        , topBodyCP1 = Coord (posX - 80) (posY - 180)
+        , topBodyCP2 = Coord (posX - 100) (posY - 30)
+        , topBodyEnd = Coord (posX - 250) (posY + (0 + (lPhase // 1)))
+        , topTailCP = Coord (posX - 275) (posY + (-100 + (lPhase // 1)))
+        , topTailEnd = Coord (posX - 300) (posY + (-50 + (lPhase // 1)))
+        , tailMiddle = Coord (posX - 275) (posY + (0 + (lPhase // 1)))
+        , lowTailStart = Coord (posX - 300) (posY + (40 + (lPhase // 1)))
+        , lowTailCP = Coord (posX - 275) (posY + (80 + (lPhase // 1)))
+        , lowTailEnd = Coord (posX - 250) (posY + (10 + (lPhase // 1)))
+        , lowBodyCP1 = Coord (posX - 100) (posY + 100)
+        , lowBodyCP2 = Coord (posX - 30) (posY + 90)
+        , lowBodyEnd = Coord (posX - 0) (posY + 0)
+        , eye = Coord (posX - 35) (posY - 10)
+        }
 
 
 whaleBody : Whale -> Bounds -> Int -> Int -> Html Msg
 whaleBody whale (Bounds (Coord x1 y1) (Coord x2 y2)) direction globalPhase =
     let
-        rel (Coord x y) = Coord (if direction == 1 then x2 - x else x1 + x) (y)
+        rel (Coord x y) =
+            Coord
+                (if direction == 1 then
+                    x2 - x
+                 else
+                    x1 + x
+                )
+                (y)
 
-        coords = whaleCoords whale globalPhase
+        coords =
+            whaleCoords whale globalPhase
 
         body =
             [ Move (rel coords.start), Cubic (rel coords.topBodyCP1) (rel coords.topBodyCP2) (rel coords.topBodyEnd) ]
@@ -318,17 +327,27 @@ whaleBody whale (Bounds (Coord x1 y1) (Coord x2 y2)) direction globalPhase =
         bodyLow =
             [ Cubic (rel coords.lowBodyCP1) (rel coords.lowBodyCP2) (rel coords.lowBodyEnd), End ]
 
-        absShapes = whaleShapes whale globalPhase
+        absShapes =
+            whaleShapes whale globalPhase
 
-        relShape shape = case shape of
-          Circle coord r -> Circle (rel coord) r
-          Rect coord w h -> Rect (rel coord) w h
+        relShape shape =
+            case shape of
+                Circle coord r ->
+                    Circle (rel coord) r
 
-        relShapes = List.map relShape absShapes
+                Rect coord w h ->
+                    Rect (rel coord) w h
 
-        shapeToSvg shape = case shape of
-          Circle (Coord x y) cr -> Svg.circle [cx (toString x), cy (toString y), r ( toString cr), fill "yellow" ] []
-          Rect (Coord cx cy) cw ch -> Svg.rect [] []
+        relShapes =
+            List.map relShape absShapes
+
+        shapeToSvg shape =
+            case shape of
+                Circle (Coord x y) cr ->
+                    Svg.circle [ cx (toString x), cy (toString y), r (toString cr), fill "yellow" ] []
+
+                Rect (Coord cx cy) cw ch ->
+                    Svg.rect [] []
     in
         Svg.g []
             [ Svg.path
@@ -352,17 +371,21 @@ whaleBody whale (Bounds (Coord x1 y1) (Coord x2 y2)) direction globalPhase =
 whaleShapes : Whale -> Int -> List Shape
 whaleShapes whale globalPhase =
     let
-      coords = whaleCoords whale globalPhase
-      shift (Coord x y) dx dy = Coord (x + dx) (y + dy)
+        coords =
+            whaleCoords whale globalPhase
+
+        shift (Coord x y) dx dy =
+            Coord (x + dx) (y + dy)
     in
-     [ Circle (shift coords.start -10 0) 10
-     , Circle (shift coords.topTailEnd 16 -6) 10
-    -- , Circle coords.lowTailEnd 10
-     , Circle (shift coords.lowTailStart 18 4) 10
-     , Circle (shift coords.start -71 (-54 + (globalPhase // 20))) 30
-     , Circle (shift coords.start -72 (26 + (globalPhase // 20))) 40
-     , Circle (shift coords.start -110 (27 + (globalPhase // 4))) 40
-     ]
+        [ Circle (shift coords.start -10 0) 10
+        , Circle (shift coords.topTailEnd 16 -6) 10
+
+        -- , Circle coords.lowTailEnd 10
+        , Circle (shift coords.lowTailStart 18 4) 10
+        , Circle (shift coords.start -71 (-54 + (globalPhase // 20))) 30
+        , Circle (shift coords.start -72 (26 + (globalPhase // 20))) 40
+        , Circle (shift coords.start -110 (27 + (globalPhase // 4))) 40
+        ]
 
 
 obstaclesView : Obstacles -> Bounds -> Int -> Int -> Html Msg
