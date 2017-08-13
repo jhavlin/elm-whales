@@ -45,7 +45,13 @@ type alias Model =
     , time : Time
     , phase : Int
     , dist : Int
+    , gameState: GameState
     }
+
+type GameState
+   = Play
+   | Ended
+
 
 
 init : ( Model, Cmd Msg )
@@ -74,6 +80,7 @@ init =
           , time = 0.0
           , phase = 0
           , dist = -1300
+          , gameState = Play
           }
         , Cmd.none
         )
@@ -93,12 +100,27 @@ update msg model =
     case msg of
         Render time ->
             if (time > model.time + 10) then
-                ( { model | time = time, phase = timeToPhase time, dist = model.dist + 1 }, Cmd.none )
+                ( { model | time = time
+                          , phase = timeToPhase time
+                          , dist = model.dist + 1
+                          , gameState = if
+                                          (collides model.leftGame model) || (collides model.rightGame model)
+                                        then
+                                          Ended
+                                        else
+                                          model.gameState
+                  }
+                , Cmd.none
+                )
             else
                 ( model, Cmd.none )
 
         KeyPressed code ->
+          if
+            model.gameState == Play
+          then
             ( handleKey model code, Cmd.none )
+          else ( model, Cmd.none )
 
 
 handleKey : Model -> Int -> Model
@@ -146,6 +168,45 @@ moveWhale whale direction =
         { whale | posY = pos }
 
 
+collides : Game -> Model -> Bool
+collides { whale, direction, obstacles } model =
+    let
+        ws =
+            whaleShapes whale model.phase
+
+        whaleCollidesWithObstacle obstacle =
+            List.any (\s -> shapeCollidesWithObstacle s obstacle model.dist) ws
+    in
+        List.any (whaleCollidesWithObstacle) obstacles
+
+
+shapeCollidesWithObstacle : Shape -> Obstacle -> Int -> Bool
+shapeCollidesWithObstacle shape (Obstacle base shapes) dist =
+    case shape of -- shape in the whale
+      Circle (Coord x y) r ->
+        let
+          obstacleShapeCollides shape =
+            case shape of -- shape in the obstacle
+              Circle (Coord ox oy) or_ ->
+                let
+                  rx = base + ox - dist
+                  distanceOfCenters = (toFloat >> sqrt) ((abs (x - rx))^2 + (abs (y - oy))^2)
+                in
+                  distanceOfCenters < toFloat (r + or_)
+              Rect (Coord ox oy) ow oh ->
+                let
+                  -- fix coordinates - enlarge rect by radius
+                  fx1 = base + ox - dist - r
+                  fy1 = oy - r
+                  fx2 = base + ox - dist + ow + r
+                  fy2 = oy + oh + r
+                in
+                  (x > fx1) && (x < fx2) && (y > fy1) && (y < fy2)
+        in
+          List.any (obstacleShapeCollides) shapes
+      _ -> True -- TODO, no rectangles in whale shapes
+
+
 timeToPhase : Time -> Int
 timeToPhase time =
     let
@@ -170,7 +231,12 @@ timeToPhase time =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every (25 * millisecond) Render
+    if
+      model.gameState == Play
+    then
+      Time.every (25 * millisecond) Render
+    else
+      Sub.batch []
 
 
 
@@ -222,6 +288,7 @@ view model =
                     []
                 , game model.leftGame leftGameBounds model.phase model.dist
                 , game model.rightGame rightGameBounds model.phase model.dist
+                , gameControls model
                 ]
         ]
 
@@ -428,3 +495,18 @@ obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist 
             Svg.g [] (List.map (\s -> renderShape start s) shapes)
     in
         Svg.g [] (List.map render active)
+
+
+gameControls: Model -> Html Msg
+gameControls model =
+  if
+    model.gameState == Ended
+  then
+    Svg.g []
+      [ Svg.rect [x "800", y "250", width "1000", height "400",
+                  fill "#EEEEFF", stroke "gray", strokeWidth "3",
+                  rx "10", ry "10", fillOpacity "0.85"] [],
+        Svg.text_ [x "900", y "480", fontSize "80"] [Svg.text "Bum. Zkuste to znovu."]
+      ]
+  else
+    Svg.g [] []
