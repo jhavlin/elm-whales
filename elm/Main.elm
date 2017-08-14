@@ -9,6 +9,7 @@ import AnimationFrame exposing (times)
 import Time exposing (Time, inSeconds, inMilliseconds, every, millisecond)
 import Space exposing (..)
 import Obstacles exposing (..)
+import GamePorts
 import Json.Decode
 
 
@@ -82,7 +83,7 @@ init =
           , dist = -1300
           , gameState = Play
           }
-        , Cmd.none
+        , GamePorts.startLoop ""
         )
 
 
@@ -91,29 +92,29 @@ init =
 
 
 type Msg
-    = Render Time
+    = Render GamePorts.RoundData
     | KeyPressed Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Render time ->
-            if (time > model.time + 10) then
+        Render { wPressed, sPressed, oPressed, kPressed } ->
+
                 ( { model
-                    | time = time
-                    , phase = timeToPhase time
+                    | time = model.time + 15
+                    , phase = timeToPhase model.time
                     , dist = model.dist + 1
                     , gameState =
                         if (collides model.leftGame model) || (collides model.rightGame model) then
                             Ended
                         else
                             model.gameState
+                    , leftGame = if wPressed then moveInGame model.leftGame -1 else if sPressed then moveInGame model.leftGame 1 else model.leftGame
+                    , rightGame = if oPressed then moveInGame model.rightGame -1 else if kPressed then moveInGame model.rightGame 1 else model.rightGame
                   }
                 , Cmd.none
                 )
-            else
-                ( model, Cmd.none )
 
         KeyPressed code ->
             if model.gameState == Play then
@@ -250,7 +251,7 @@ timeToPhase time =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     if model.gameState == Play then
-        Time.every (25 * millisecond) Render
+        GamePorts.roundToPlay Render
     else
         Sub.batch []
 
@@ -262,8 +263,7 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     div
-        [ onKeyDown KeyPressed
-        , tabindex -1
+        [
         ]
         [ h1 [] [ Html.text ("Whales " ++ (toString model.time) ++ " phase " ++ (toString model.phase)) ]
         , let
@@ -327,11 +327,6 @@ boundsToClipPath (Bounds (Coord x1 y1) (Coord x2 y2)) clipId =
                 ]
                 []
             ]
-
-
-onKeyDown : (Int -> Msg) -> Html.Attribute Msg
-onKeyDown tagger =
-    on "keydown" (Json.Decode.map tagger keyCode)
 
 
 game : Game -> Bounds -> Int -> Int -> Html Msg
