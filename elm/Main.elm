@@ -100,21 +100,32 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Render { wPressed, sPressed, oPressed, kPressed } ->
-
-                ( { model
-                    | time = model.time + 15
-                    , phase = timeToPhase model.time
-                    , dist = model.dist + 1
-                    , gameState =
-                        if (collides model.leftGame model) || (collides model.rightGame model) then
-                            Ended
-                        else
-                            model.gameState
-                    , leftGame = if wPressed then moveInGame model.leftGame -1 else if sPressed then moveInGame model.leftGame 1 else model.leftGame
-                    , rightGame = if oPressed then moveInGame model.rightGame -1 else if kPressed then moveInGame model.rightGame 1 else model.rightGame
-                  }
-                , Cmd.none
-                )
+            ( { model
+                | time = model.time + 15
+                , phase = timeToPhase model.time
+                , dist = model.dist + 1
+                , gameState =
+                    if (collides model.leftGame model) || (collides model.rightGame model) then
+                        Ended
+                    else
+                        model.gameState
+                , leftGame =
+                    if wPressed then
+                        moveInGame model.leftGame -1
+                    else if sPressed then
+                        moveInGame model.leftGame 1
+                    else
+                        model.leftGame
+                , rightGame =
+                    if oPressed then
+                        moveInGame model.rightGame -1
+                    else if kPressed then
+                        moveInGame model.rightGame 1
+                    else
+                        model.rightGame
+              }
+            , Cmd.none
+            )
 
         KeyPressed code ->
             if model.gameState == Play then
@@ -263,8 +274,7 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     div
-        [
-        ]
+        []
         [ h1 [] [ Html.text ("Whales " ++ (toString model.time) ++ " phase " ++ (toString model.phase)) ]
         , let
             lWidth =
