@@ -61,7 +61,7 @@ init =
         whale =
             { phase = 0
             , posX = 310
-            , posY = 170
+            , posY = 170 -- 170
             }
 
         leftGame =
@@ -80,7 +80,7 @@ init =
           , rightGame = rightGame
           , time = 0.0
           , phase = 0
-          , dist = -1300
+          , dist = -1300 -- -1300
           , gameState = Play
           }
         , GamePorts.startLoop ""
@@ -192,12 +192,12 @@ collides { whale, direction, obstacles } model =
 
 
 shapeCollidesWithObstacle : Shape -> Obstacle -> Int -> Bool
-shapeCollidesWithObstacle shape (Obstacle base shapes) dist =
+shapeCollidesWithObstacle shape obstacle dist =
     case shape of
         -- shape in the whale
         Circle (Coord x y) r ->
             let
-                obstacleShapeCollides shape =
+                obstacleShapeCollides base shape =
                     case shape of
                         -- shape in the obstacle
                         Circle (Coord ox oy) or_ ->
@@ -227,7 +227,11 @@ shapeCollidesWithObstacle shape (Obstacle base shapes) dist =
                             in
                                 (x > fx1) && (x < fx2) && (y > fy1) && (y < fy2)
             in
-                List.any (obstacleShapeCollides) shapes
+              case obstacle of
+                (CompoundObstacle base shapes) ->
+                  List.any (obstacleShapeCollides base) shapes
+                (ImageObstacle src ix iy iw ih clr) ->
+                  obstacleShapeCollides 0 (Rect (Coord ix iy) iw ih)
 
         _ ->
             True
@@ -275,8 +279,7 @@ view : Model -> Html Msg
 view model =
     div
         []
-        [ h1 [] [ Html.text ("Whales " ++ (toString model.time) ++ " phase " ++ (toString model.phase)) ]
-        , let
+        [ let
             lWidth =
                 2600
 
@@ -291,31 +294,44 @@ view model =
             rightGameBounds =
                 Bounds (Coord ((lWidth // 2) + 10) 10) (Coord (lWidth - 10) (lHeight - 10))
           in
-            svg
-                [ version "1.1"
-                , width "100%"
+            div []
+            [ svg
+              [ version "1.1"
+              , width "100%"
 
-                --, height "600"
-                , baseProfile "full"
-                , viewBox ("0 0 " ++ (toString lWidth) ++ " " ++ (toString lHeight))
-                ]
-                [ Svg.defs []
-                    [ boundsToClipPath leftGameBounds "leftGameClip"
-                    , boundsToClipPath rightGameBounds "rightGameClip"
-                    ]
-                , Svg.rect
-                    [ x "2"
-                    , y "2"
-                    , width (toString (lWidth - 2))
-                    , height (toString (lHeight - 2))
-                    , fill "lightblue"
-                    , stroke "gray"
-                    ]
-                    []
-                , game model.leftGame leftGameBounds model.phase model.dist
-                , game model.rightGame rightGameBounds model.phase model.dist
-                , gameControls model
-                ]
+              --, height "600"
+              , baseProfile "full"
+              , viewBox ("0 0 " ++ (toString lWidth) ++ " " ++ (toString 270))
+              ]
+              [ Svg.image [x "100", y "y", xlinkHref "img/honza_controls.png"] []
+              , Svg.image [x "2100", y "y", xlinkHref "img/janina_controls.png"] []
+              ]
+            , svg
+                  [ version "1.1"
+                  , width "100%"
+
+                  --, height "600"
+                  , baseProfile "full"
+                  , viewBox ("0 0 " ++ (toString lWidth) ++ " " ++ (toString lHeight))
+                  ]
+                  [ Svg.defs []
+                      [ boundsToClipPath leftGameBounds "leftGameClip"
+                      , boundsToClipPath rightGameBounds "rightGameClip"
+                      ]
+                  , Svg.rect
+                      [ x "2"
+                      , y "2"
+                      , width (toString (lWidth - 2))
+                      , height (toString (lHeight - 2))
+                      , fill "lightblue"
+                      , stroke "gray"
+                      ]
+                      []
+                  , game model.leftGame leftGameBounds model.phase model.dist
+                  , game model.rightGame rightGameBounds model.phase model.dist
+                  , gameControls model
+                  ]
+            ]
         ]
 
 
@@ -452,7 +468,7 @@ whaleBody whale (Bounds (Coord x1 y1) (Coord x2 y2)) direction globalPhase =
                 , fill "white"
                 ]
                 []
-            , Svg.g [] (List.map shapeToSvg relShapes)
+            -- , Svg.g [] (List.map shapeToSvg relShapes)
             ]
 
 
@@ -479,11 +495,15 @@ whaleShapes whale globalPhase =
 obstaclesView : Obstacles -> Bounds -> Int -> Int -> Html Msg
 obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist =
     let
-        oStart (Obstacle start shapes) =
-            start
+        oStart obstacle =
+          case obstacle of
+            (CompoundObstacle start shapes) ->
+              start
+            (ImageObstacle src ix iy iw ih clr) ->
+              ix
 
         isActive obstacle =
-            (oStart obstacle) < dist + (bx2 - bx1) && (oStart obstacle) + 300 > dist
+            (oStart obstacle) < dist + (bx2 - bx1) && (oStart obstacle) + 800 > dist
 
         active =
             List.filter (isActive) obstacles
@@ -497,7 +517,7 @@ obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist 
                     renderRect start coord w h
 
         renderCircle start (Coord x y) r =
-            Svg.circle [] []
+            Svg.circle [] [] -- TODO
 
         renderRect start (Coord x1 y1) w h =
             let
@@ -512,8 +532,30 @@ obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist 
             in
                 Svg.rect [ x (toString fx1), y (toString fy1), width (toString w), height (toString h), fill "red" ] []
 
-        render (Obstacle start shapes) =
-            Svg.g [] (List.map (\s -> renderShape start s) shapes)
+        renderImageObstacle src ix iy iw ih clr =
+            let
+                fx =
+                    if direction == -1 then
+                        bx1 + ix - dist
+                    else
+                        bx2 - iw - ix + dist
+
+                fy1 =
+                    y1
+            in
+              Svg.image [x (toString fx), y (toString iy), width (toString iw), height (toString ih), xlinkHref src] []
+              --Svg.g []
+              --  [ Svg.rect [x (toString fx), y (toString iy), width (toString iw), height (toString ih), stroke clr, strokeWidth "2", fill "none"] []
+              --  ,
+              --  ]
+
+
+        render obstacle =
+            case obstacle of
+              (CompoundObstacle start shapes) ->
+                  Svg.g [] (List.map (\s -> renderShape start s) shapes)
+              (ImageObstacle src ix iy iw ih clr) ->
+                (renderImageObstacle src ix iy iw ih clr)
     in
         Svg.g [] (List.map render active)
 
