@@ -227,11 +227,12 @@ shapeCollidesWithObstacle shape obstacle dist =
                             in
                                 (x > fx1) && (x < fx2) && (y > fy1) && (y < fy2)
             in
-              case obstacle of
-                (CompoundObstacle base shapes) ->
-                  List.any (obstacleShapeCollides base) shapes
-                (ImageObstacle src ix iy iw ih clr) ->
-                  obstacleShapeCollides 0 (Rect (Coord ix iy) iw ih)
+                case obstacle of
+                    CompoundObstacle base shapes ->
+                        List.any (obstacleShapeCollides base) shapes
+
+                    ImageObstacle src ix iy iw ih clr ->
+                        obstacleShapeCollides 0 (Rect (Coord ix iy) iw ih)
 
         _ ->
             True
@@ -295,43 +296,43 @@ view model =
                 Bounds (Coord ((lWidth // 2) + 10) 10) (Coord (lWidth - 10) (lHeight - 10))
           in
             div []
-            [ svg
-              [ version "1.1"
-              , width "100%"
+                [ svg
+                    [ version "1.1"
+                    , width "100%"
 
-              --, height "600"
-              , baseProfile "full"
-              , viewBox ("0 0 " ++ (toString lWidth) ++ " " ++ (toString 270))
-              ]
-              [ Svg.image [x "100", y "y", xlinkHref "img/honza_controls.png"] []
-              , Svg.image [x "2100", y "y", xlinkHref "img/janina_controls.png"] []
-              ]
-            , svg
-                  [ version "1.1"
-                  , width "100%"
+                    --, height "600"
+                    , baseProfile "full"
+                    , viewBox ("0 0 " ++ (toString lWidth) ++ " " ++ (toString 270))
+                    ]
+                    [ Svg.image [ x "100", y "y", xlinkHref "img/honza_controls.png" ] []
+                    , Svg.image [ x "2100", y "y", xlinkHref "img/janina_controls.png" ] []
+                    ]
+                , svg
+                    [ version "1.1"
+                    , width "100%"
 
-                  --, height "600"
-                  , baseProfile "full"
-                  , viewBox ("0 0 " ++ (toString lWidth) ++ " " ++ (toString lHeight))
-                  ]
-                  [ Svg.defs []
-                      [ boundsToClipPath leftGameBounds "leftGameClip"
-                      , boundsToClipPath rightGameBounds "rightGameClip"
-                      ]
-                  , Svg.rect
-                      [ x "2"
-                      , y "2"
-                      , width (toString (lWidth - 2))
-                      , height (toString (lHeight - 2))
-                      , fill "lightblue"
-                      , stroke "gray"
-                      ]
-                      []
-                  , game model.leftGame leftGameBounds model.phase model.dist
-                  , game model.rightGame rightGameBounds model.phase model.dist
-                  , gameControls model
-                  ]
-            ]
+                    --, height "600"
+                    , baseProfile "full"
+                    , viewBox ("0 0 " ++ (toString lWidth) ++ " " ++ (toString lHeight))
+                    ]
+                    [ Svg.defs []
+                        [ boundsToClipPath leftGameBounds "leftGameClip"
+                        , boundsToClipPath rightGameBounds "rightGameClip"
+                        ]
+                    , Svg.rect
+                        [ x "2"
+                        , y "2"
+                        , width (toString (lWidth - 2))
+                        , height (toString (lHeight - 2))
+                        , fill "lightblue"
+                        , stroke "gray"
+                        ]
+                        []
+                    , game model.leftGame leftGameBounds model.phase model.dist
+                    , game model.rightGame rightGameBounds model.phase model.dist
+                    , gameControls model
+                    ]
+                ]
         ]
 
 
@@ -468,6 +469,7 @@ whaleBody whale (Bounds (Coord x1 y1) (Coord x2 y2)) direction globalPhase =
                 , fill "white"
                 ]
                 []
+
             -- , Svg.g [] (List.map shapeToSvg relShapes)
             ]
 
@@ -496,11 +498,12 @@ obstaclesView : Obstacles -> Bounds -> Int -> Int -> Html Msg
 obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist =
     let
         oStart obstacle =
-          case obstacle of
-            (CompoundObstacle start shapes) ->
-              start
-            (ImageObstacle src ix iy iw ih clr) ->
-              ix
+            case obstacle of
+                CompoundObstacle start shapes ->
+                    start
+
+                ImageObstacle src ix iy iw ih clr ->
+                    ix
 
         isActive obstacle =
             (oStart obstacle) < dist + (bx2 - bx1) && (oStart obstacle) + 800 > dist
@@ -517,8 +520,9 @@ obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist 
                     renderRect start coord w h
 
         renderCircle start (Coord x y) r =
-            Svg.circle [] [] -- TODO
+            Svg.circle [] []
 
+        -- TODO
         renderRect start (Coord x1 y1) w h =
             let
                 fx1 =
@@ -543,19 +547,19 @@ obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist 
                 fy1 =
                     y1
             in
-              Svg.image [x (toString fx), y (toString iy), width (toString iw), height (toString ih), xlinkHref src] []
-              --Svg.g []
-              --  [ Svg.rect [x (toString fx), y (toString iy), width (toString iw), height (toString ih), stroke clr, strokeWidth "2", fill "none"] []
-              --  ,
-              --  ]
+                Svg.image [ x (toString fx), y (toString iy), width (toString iw), height (toString ih), xlinkHref src ] []
 
-
+        --Svg.g []
+        --  [ Svg.rect [x (toString fx), y (toString iy), width (toString iw), height (toString ih), stroke clr, strokeWidth "2", fill "none"] []
+        --  ,
+        --  ]
         render obstacle =
             case obstacle of
-              (CompoundObstacle start shapes) ->
-                  Svg.g [] (List.map (\s -> renderShape start s) shapes)
-              (ImageObstacle src ix iy iw ih clr) ->
-                (renderImageObstacle src ix iy iw ih clr)
+                CompoundObstacle start shapes ->
+                    Svg.g [] (List.map (\s -> renderShape start s) shapes)
+
+                ImageObstacle src ix iy iw ih clr ->
+                    (renderImageObstacle src ix iy iw ih clr)
     in
         Svg.g [] (List.map render active)
 
