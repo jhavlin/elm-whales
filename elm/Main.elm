@@ -61,7 +61,7 @@ init =
         whale =
             { phase = 0
             , posX = 310
-            , posY = 170 -- 170
+            , posY = 400 -- 170
             }
 
         leftGame =
@@ -80,7 +80,7 @@ init =
           , rightGame = rightGame
           , time = 0.0
           , phase = 0
-          , dist = -1300 -- -1300
+          , dist = 3980 -- -1300
           , gameState = Play
           }
         , GamePorts.startLoop ""
@@ -94,6 +94,14 @@ init =
 type Msg
     = Render GamePorts.RoundData
     | KeyPressed Int
+
+
+winDist : Int
+winDist = 4400
+
+
+finalDist : Int
+finalDist = 4400 + 320
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -110,14 +118,22 @@ update msg model =
                     else
                         model.gameState
                 , leftGame =
-                    if wPressed then
+                    if model.dist > winDist
+                      then if model.dist < finalDist
+                           then moveToWin model.leftGame
+                           else model.leftGame
+                    else if wPressed then
                         moveInGame model.leftGame -1
                     else if sPressed then
                         moveInGame model.leftGame 1
                     else
                         model.leftGame
                 , rightGame =
-                    if oPressed then
+                    if model.dist > winDist
+                        then if model.dist < finalDist
+                             then moveToWin model.rightGame
+                             else model.rightGame
+                    else if oPressed then
                         moveInGame model.rightGame -1
                     else if kPressed then
                         moveInGame model.rightGame 1
@@ -177,6 +193,14 @@ moveWhale whale direction =
                 rawPos
     in
         { whale | posY = pos }
+
+
+moveToWin : Game -> Game
+moveToWin game =
+  let
+    moveWhaleForward whale = { whale | posX = whale.posX + 3 }
+  in
+    {game | whale = moveWhaleForward game.whale }
 
 
 collides : Game -> Model -> Bool
@@ -331,6 +355,7 @@ view model =
                     , game model.leftGame leftGameBounds model.phase model.dist
                     , game model.rightGame rightGameBounds model.phase model.dist
                     , gameControls model
+                    , victory model
                     ]
                 ]
         ]
@@ -562,6 +587,31 @@ obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist 
                     (renderImageObstacle src ix iy iw ih clr)
     in
         Svg.g [] (List.map render active)
+
+
+victory : Model -> Html Msg
+victory model =
+    if
+      model.dist >= finalDist
+    then
+      Svg.g []
+        [ Svg.rect
+            [ x "800"
+            , y "250"
+            , width "1000"
+            , height "400"
+            , fill "#EEEEFF"
+            , stroke "gray"
+            , strokeWidth "3"
+            , rx "10"
+            , ry "10"
+            ]
+            []
+        , Svg.text_ [ x "1000", y "600", fontSize "50" ] [ Svg.text "Kód je: Math.floor(π*1000)" ]
+        , Svg.image [ xlinkHref "img/vyhra.png", width "450", height "223", x "1075", y "290"] []
+        ]
+    else
+      Svg.g [] []
 
 
 gameControls : Model -> Html Msg
