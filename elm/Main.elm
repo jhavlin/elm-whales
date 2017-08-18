@@ -150,10 +150,13 @@ update msg model =
         Retry _ ->
             if model.gameState == Ended then
                 let
-                    initState = init
-                    initialModel ( model, cmd ) = model
+                    initState =
+                        init
+
+                    initialModel ( model, cmd ) =
+                        model
                 in
-                  ( initialModel initState, Cmd.none )
+                    ( initialModel initState, Cmd.none )
             else
                 ( model, Cmd.none )
 
