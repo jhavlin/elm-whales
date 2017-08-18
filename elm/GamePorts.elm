@@ -13,3 +13,6 @@ port startLoop : String -> Cmd msg
 
 
 port roundToPlay : (RoundData -> msg) -> Sub msg
+
+
+port retryGame : (Int -> msg) -> Sub msg

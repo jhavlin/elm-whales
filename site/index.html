@@ -39,6 +39,9 @@
       } else if (ev.keyCode === 75) { // k
         kPressed = false;
       }
+      if (ev.keyCode === 32 || ev.keyCode === 13 || ev.keyCode === 27) {
+        app.ports.retryGame.send(0);
+      }
     });
 
     app.ports.startLoop.subscribe(() => {
