@@ -116,7 +116,7 @@ update msg model =
                 , dist = model.dist + 1
                 , gameState =
                     if (collides model.leftGame model) || (collides model.rightGame model) then
-                        model.gameState
+                        Ended
                     else
                         model.gameState
                 , leftGame =
@@ -409,6 +409,7 @@ game { whale, direction, obstacles } bounds globalPhase dist =
                     , height (toString (y2 - y1))
                     , fill "none"
                     , stroke "white"
+                    , strokeWidth "3"
                     ]
                     []
         , whaleBody whale bounds direction globalPhase
