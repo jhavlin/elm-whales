@@ -340,8 +340,8 @@ view model =
                     , baseProfile "full"
                     , viewBox ("0 0 " ++ (toString lWidth) ++ " " ++ (toString 270))
                     ]
-                    [ Svg.image [ x "100", y "y", xlinkHref "img/honza_controls.png" ] []
-                    , Svg.image [ x "2100", y "y", xlinkHref "img/janina_controls.png" ] []
+                    [ Svg.image [ x "100", y "0", xlinkHref "img/honza_controls.png", width "400", height "250" ] []
+                    , Svg.image [ x "2100", y "0", xlinkHref "img/janina_controls.png", width "400", height "250" ] []
                     ]
                 , svg
                     [ version "1.1"
