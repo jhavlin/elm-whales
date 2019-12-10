@@ -1,4 +1,4 @@
-port module GamePorts exposing (..)
+port module GamePorts exposing (RoundData, retryGame, roundToPlay, startLoop)
 
 
 type alias RoundData =

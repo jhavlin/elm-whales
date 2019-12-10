@@ -8,9 +8,11 @@
     <script type="text/javascript" src="js/elm.js"></script>
   </head>
   <body>
+    <div id="game">
+    </div>
   </body>
   <script type="text/javascript">
-    var app = Elm.Main.embed(document.body);
+    var app = Elm.Main.init({ node: document.getElementById('game') });
 
     let wPressed = false;
     let sPressed = false;

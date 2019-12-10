@@ -1,4 +1,4 @@
-module Space exposing (..)
+module Space exposing (Bounds(..), Coord(..), PathCommand(..), WhaleCoords, cStr, dStr, getX, getY, pathDefStr)
 
 import List exposing (..)
 
@@ -49,23 +49,23 @@ getY (Coord x y) =
 
 cStr : Coord -> String
 cStr (Coord x y) =
-    (toString x) ++ " " ++ (toString y)
+    String.fromInt x ++ " " ++ String.fromInt y
 
 
 dStr : PathCommand -> String
 dStr pc =
     case pc of
         Move c ->
-            "M " ++ (cStr c)
+            "M " ++ cStr c
 
         Cubic c1 c2 end ->
-            "C " ++ (cStr c1) ++ " " ++ (cStr c2) ++ " " ++ (cStr end)
+            "C " ++ cStr c1 ++ " " ++ cStr c2 ++ " " ++ cStr end
 
         Quad c end ->
-            "Q " ++ (cStr c) ++ " " ++ (cStr end)
+            "Q " ++ cStr c ++ " " ++ cStr end
 
         Line end ->
-            "L " ++ (cStr end)
+            "L " ++ cStr end
 
         End ->
             "Z"
@@ -75,9 +75,9 @@ pathDefStr : List PathCommand -> String
 pathDefStr commands =
     let
         cmdStrings =
-            List.map (dStr) commands
+            List.map dStr commands
 
         stringList =
             intersperse " " cmdStrings
     in
-        foldr (++) "" stringList
+    foldr (++) "" stringList

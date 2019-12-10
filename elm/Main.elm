@@ -1,20 +1,21 @@
-module Main exposing (..)
+module Main exposing (Game, GameState(..), Model, Msg(..), Whale, boundsToClipPath, collides, finalDist, game, gameControls, handleKey, init, main, moveInGame, moveToWin, moveWhale, obstaclesView, shapeCollidesWithObstacle, subscriptions, timeToPhase, update, victory, view, whaleBody, whaleCoords, whaleShapes, winDist)
 
+import Browser
+import Browser.Events exposing (onAnimationFrame)
+import GamePorts
 import Html exposing (..)
-import Html.Events exposing (..)
 import Html.Attributes exposing (tabindex)
+import Html.Events exposing (..)
+import Json.Decode
+import Obstacles exposing (..)
+import Space exposing (..)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
-import AnimationFrame exposing (times)
-import Time exposing (Time, inSeconds, inMilliseconds, every, millisecond)
-import Space exposing (..)
-import Obstacles exposing (..)
-import GamePorts
-import Json.Decode
+import Time exposing (Posix, every, posixToMillis, millisToPosix, toSecond)
 
 
 main =
-    Html.program
+    Browser.element
         { init = init
         , view = view
         , update = update
@@ -43,7 +44,7 @@ type alias Game =
 type alias Model =
     { leftGame : Game
     , rightGame : Game
-    , time : Time
+    , time : Posix
     , phase : Int
     , dist : Int
     , gameState : GameState
@@ -55,8 +56,8 @@ type GameState
     | Ended
 
 
-init : ( Model, Cmd Msg )
-init =
+init : () -> ( Model, Cmd Msg )
+init _ =
     let
         whale =
             { phase = 0
@@ -76,15 +77,15 @@ init =
             , obstacles = rightGameObstacles
             }
     in
-        ( { leftGame = leftGame
-          , rightGame = rightGame
-          , time = 0.0
-          , phase = 0
-          , dist = -800
-          , gameState = Play
-          }
-        , GamePorts.startLoop ""
-        )
+    ( { leftGame = leftGame
+      , rightGame = rightGame
+      , time = millisToPosix 0
+      , phase = 0
+      , dist = -800
+      , gameState = Play
+      }
+    , GamePorts.startLoop ""
+    )
 
 
 
@@ -111,36 +112,45 @@ update msg model =
     case msg of
         Render { wPressed, sPressed, oPressed, kPressed } ->
             ( { model
-                | time = model.time + 15
+                | time = millisToPosix <| posixToMillis model.time + 15
                 , phase = timeToPhase model.time
                 , dist = model.dist + 1
                 , gameState =
-                    if (collides model.leftGame model) || (collides model.rightGame model) then
+                    if collides model.leftGame model || collides model.rightGame model then
                         Ended
+
                     else
                         model.gameState
                 , leftGame =
                     if model.dist > winDist then
                         if model.dist < finalDist then
                             moveToWin model.leftGame
+
                         else
                             model.leftGame
+
                     else if wPressed then
                         moveInGame model.leftGame -1
+
                     else if sPressed then
                         moveInGame model.leftGame 1
+
                     else
                         model.leftGame
                 , rightGame =
                     if model.dist > winDist then
                         if model.dist < finalDist then
                             moveToWin model.rightGame
+
                         else
                             model.rightGame
+
                     else if oPressed then
                         moveInGame model.rightGame -1
+
                     else if kPressed then
                         moveInGame model.rightGame 1
+
                     else
                         model.rightGame
               }
@@ -151,12 +161,13 @@ update msg model =
             if model.gameState == Ended then
                 let
                     initState =
-                        init
+                        init ()
 
-                    initialModel ( model, cmd ) =
-                        model
+                    initialModel ( model_, cmd ) =
+                        model_
                 in
-                    ( initialModel initState, Cmd.none )
+                ( initialModel initState, Cmd.none )
+
             else
                 ( model, Cmd.none )
 
@@ -185,8 +196,8 @@ handleKey model code =
 
 
 moveInGame : Game -> Int -> Game
-moveInGame game direction =
-    { game | whale = moveWhale game.whale direction }
+moveInGame game_ direction =
+    { game_ | whale = moveWhale game_.whale direction }
 
 
 moveWhale : Whale -> Int -> Whale
@@ -198,21 +209,23 @@ moveWhale whale direction =
         pos =
             if rawPos < 0 then
                 0
+
             else if rawPos > 900 then
                 900
+
             else
                 rawPos
     in
-        { whale | posY = pos }
+    { whale | posY = pos }
 
 
 moveToWin : Game -> Game
-moveToWin game =
+moveToWin game_ =
     let
         moveWhaleForward whale =
             { whale | posX = whale.posX + 3 }
     in
-        { game | whale = moveWhaleForward game.whale }
+    { game_ | whale = moveWhaleForward game_.whale }
 
 
 collides : Game -> Model -> Bool
@@ -224,7 +237,7 @@ collides { whale, direction, obstacles } model =
         whaleCollidesWithObstacle obstacle =
             List.any (\s -> shapeCollidesWithObstacle s obstacle model.dist) ws
     in
-        List.any (whaleCollidesWithObstacle) obstacles
+    List.any whaleCollidesWithObstacle obstacles
 
 
 shapeCollidesWithObstacle : Shape -> Obstacle -> Int -> Bool
@@ -233,8 +246,8 @@ shapeCollidesWithObstacle shape obstacle dist =
         -- shape in the whale
         Circle (Coord x y) r ->
             let
-                obstacleShapeCollides base shape =
-                    case shape of
+                obstacleShapeCollides base shape_ =
+                    case shape_ of
                         -- shape in the obstacle
                         Circle (Coord ox oy) or_ ->
                             let
@@ -242,9 +255,9 @@ shapeCollidesWithObstacle shape obstacle dist =
                                     base + ox - dist
 
                                 distanceOfCenters =
-                                    (toFloat >> sqrt) ((abs (x - rx)) ^ 2 + (abs (y - oy)) ^ 2)
+                                    (toFloat >> sqrt) (abs (x - rx) ^ 2 + abs (y - oy) ^ 2)
                             in
-                                distanceOfCenters < toFloat (r + or_)
+                            distanceOfCenters < toFloat (r + or_)
 
                         Rect (Coord ox oy) ow oh ->
                             let
@@ -261,14 +274,14 @@ shapeCollidesWithObstacle shape obstacle dist =
                                 fy2 =
                                     oy + oh + r
                             in
-                                (x > fx1) && (x < fx2) && (y > fy1) && (y < fy2)
+                            (x > fx1) && (x < fx2) && (y > fy1) && (y < fy2)
             in
-                case obstacle of
-                    CompoundObstacle base shapes ->
-                        List.any (obstacleShapeCollides base) shapes
+            case obstacle of
+                CompoundObstacle base shapes ->
+                    List.any (obstacleShapeCollides base) shapes
 
-                    ImageObstacle src ix iy iw ih clr ->
-                        obstacleShapeCollides 0 (Rect (Coord ix iy) iw ih)
+                ImageObstacle src ix iy iw ih clr ->
+                    obstacleShapeCollides 0 (Rect (Coord ix iy) iw ih)
 
         _ ->
             True
@@ -278,22 +291,23 @@ shapeCollidesWithObstacle shape obstacle dist =
 -- TODO, no rectangles in whale shapes
 
 
-timeToPhase : Time -> Int
+timeToPhase : Posix -> Int
 timeToPhase time =
     let
         range =
             200
 
         modulo =
-            (round (inMilliseconds time / 10)) % range
+            modBy range (posixToMillis time // 10)
 
         absVal =
             if modulo < (range // 2) then
                 modulo
+
             else
                 range - modulo
     in
-        absVal - 50
+    absVal - 50
 
 
 
@@ -304,6 +318,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     if model.gameState == Play then
         GamePorts.roundToPlay Render
+
     else
         GamePorts.retryGame Retry
 
@@ -331,45 +346,45 @@ view model =
             rightGameBounds =
                 Bounds (Coord ((lWidth // 2) + 10) 10) (Coord (lWidth - 10) (lHeight - 10))
           in
-            div []
-                [ svg
-                    [ version "1.1"
-                    , width "100%"
+          div []
+            [ svg
+                [ version "1.1"
+                , width "100%"
 
-                    --, height "600"
-                    , baseProfile "full"
-                    , viewBox ("0 0 " ++ (toString lWidth) ++ " " ++ (toString 270))
-                    ]
-                    [ Svg.image [ x "100", y "0", xlinkHref "img/honza_controls.png", width "400", height "250" ] []
-                    , Svg.image [ x "2100", y "0", xlinkHref "img/janina_controls.png", width "400", height "250" ] []
-                    ]
-                , svg
-                    [ version "1.1"
-                    , width "100%"
-
-                    --, height "600"
-                    , baseProfile "full"
-                    , viewBox ("0 0 " ++ (toString lWidth) ++ " " ++ (toString lHeight))
-                    ]
-                    [ Svg.defs []
-                        [ boundsToClipPath leftGameBounds "leftGameClip"
-                        , boundsToClipPath rightGameBounds "rightGameClip"
-                        ]
-                    , Svg.rect
-                        [ x "2"
-                        , y "2"
-                        , width (toString (lWidth - 2))
-                        , height (toString (lHeight - 2))
-                        , fill "lightblue"
-                        , stroke "gray"
-                        ]
-                        []
-                    , game model.leftGame leftGameBounds model.phase model.dist
-                    , game model.rightGame rightGameBounds model.phase model.dist
-                    , gameControls model
-                    , victory model
-                    ]
+                --, height "600"
+                , baseProfile "full"
+                , viewBox ("0 0 " ++ String.fromInt lWidth ++ " " ++ String.fromInt 270)
                 ]
+                [ Svg.image [ x "100", y "0", xlinkHref "img/player1_controls.png", width "400", height "250" ] []
+                , Svg.image [ x "2100", y "0", xlinkHref "img/player2_controls.png", width "400", height "250" ] []
+                ]
+            , svg
+                [ version "1.1"
+                , width "100%"
+
+                --, height "600"
+                , baseProfile "full"
+                , viewBox ("0 0 " ++ String.fromInt lWidth ++ " " ++ String.fromInt lHeight)
+                ]
+                [ Svg.defs []
+                    [ boundsToClipPath leftGameBounds "leftGameClip"
+                    , boundsToClipPath rightGameBounds "rightGameClip"
+                    ]
+                , Svg.rect
+                    [ x "2"
+                    , y "2"
+                    , width (String.fromInt (lWidth - 2))
+                    , height (String.fromInt (lHeight - 2))
+                    , fill "lightblue"
+                    , stroke "gray"
+                    ]
+                    []
+                , game model.leftGame leftGameBounds model.phase model.dist
+                , game model.rightGame rightGameBounds model.phase model.dist
+                , gameControls model
+                , victory model
+                ]
+            ]
         ]
 
 
@@ -382,15 +397,15 @@ boundsToClipPath (Bounds (Coord x1 y1) (Coord x2 y2)) clipId =
         h =
             y2 - y1
     in
-        Svg.clipPath [ id clipId ]
-            [ Svg.rect
-                [ x (toString x1)
-                , y (toString y1)
-                , width (toString w)
-                , height (toString h)
-                ]
-                []
+    Svg.clipPath [ id clipId ]
+        [ Svg.rect
+            [ x (String.fromInt x1)
+            , y (String.fromInt y1)
+            , width (String.fromInt w)
+            , height (String.fromInt h)
             ]
+            []
+        ]
 
 
 game : Game -> Bounds -> Int -> Int -> Html Msg
@@ -399,6 +414,7 @@ game { whale, direction, obstacles } bounds globalPhase dist =
         [ Svg.Attributes.clipPath
             (if direction == -1 then
                 "url(#leftGameClip)"
+
              else
                 "url(#rightGameClip)"
             )
@@ -406,10 +422,10 @@ game { whale, direction, obstacles } bounds globalPhase dist =
         [ case bounds of
             Bounds (Coord x1 y1) (Coord x2 y2) ->
                 Svg.rect
-                    [ x (toString x1)
-                    , y (toString y1)
-                    , width (toString (x2 - x1))
-                    , height (toString (y2 - y1))
+                    [ x (String.fromInt x1)
+                    , y (String.fromInt y1)
+                    , width (String.fromInt (x2 - x1))
+                    , height (String.fromInt (y2 - y1))
                     , fill "none"
                     , stroke "white"
                     , strokeWidth "3"
@@ -426,21 +442,21 @@ whaleCoords { phase, posX, posY } globalPhase =
         lPhase =
             globalPhase + phase
     in
-        { start = Coord (posX - 0) (posY - 0)
-        , topBodyCP1 = Coord (posX - 80) (posY - 180)
-        , topBodyCP2 = Coord (posX - 100) (posY - 30)
-        , topBodyEnd = Coord (posX - 250) (posY + (0 + (lPhase // 1)))
-        , topTailCP = Coord (posX - 275) (posY + (-100 + (lPhase // 1)))
-        , topTailEnd = Coord (posX - 300) (posY + (-50 + (lPhase // 1)))
-        , tailMiddle = Coord (posX - 275) (posY + (0 + (lPhase // 1)))
-        , lowTailStart = Coord (posX - 300) (posY + (40 + (lPhase // 1)))
-        , lowTailCP = Coord (posX - 275) (posY + (80 + (lPhase // 1)))
-        , lowTailEnd = Coord (posX - 250) (posY + (10 + (lPhase // 1)))
-        , lowBodyCP1 = Coord (posX - 100) (posY + 100)
-        , lowBodyCP2 = Coord (posX - 30) (posY + 90)
-        , lowBodyEnd = Coord (posX - 0) (posY + 0)
-        , eye = Coord (posX - 35) (posY - 10)
-        }
+    { start = Coord (posX - 0) (posY - 0)
+    , topBodyCP1 = Coord (posX - 80) (posY - 180)
+    , topBodyCP2 = Coord (posX - 100) (posY - 30)
+    , topBodyEnd = Coord (posX - 250) (posY + (0 + (lPhase // 1)))
+    , topTailCP = Coord (posX - 275) (posY + (-100 + (lPhase // 1)))
+    , topTailEnd = Coord (posX - 300) (posY + (-50 + (lPhase // 1)))
+    , tailMiddle = Coord (posX - 275) (posY + (0 + (lPhase // 1)))
+    , lowTailStart = Coord (posX - 300) (posY + (40 + (lPhase // 1)))
+    , lowTailCP = Coord (posX - 275) (posY + (80 + (lPhase // 1)))
+    , lowTailEnd = Coord (posX - 250) (posY + (10 + (lPhase // 1)))
+    , lowBodyCP1 = Coord (posX - 100) (posY + 100)
+    , lowBodyCP2 = Coord (posX - 30) (posY + 90)
+    , lowBodyEnd = Coord (posX - 0) (posY + 0)
+    , eye = Coord (posX - 35) (posY - 10)
+    }
 
 
 whaleBody : Whale -> Bounds -> Int -> Int -> Html Msg
@@ -450,10 +466,11 @@ whaleBody whale (Bounds (Coord x1 y1) (Coord x2 y2)) direction globalPhase =
             Coord
                 (if direction == 1 then
                     x2 - x
+
                  else
                     x1 + x
                 )
-                (y)
+                y
 
         coords =
             whaleCoords whale globalPhase
@@ -487,29 +504,29 @@ whaleBody whale (Bounds (Coord x1 y1) (Coord x2 y2)) direction globalPhase =
         shapeToSvg shape =
             case shape of
                 Circle (Coord x y) cr ->
-                    Svg.circle [ cx (toString x), cy (toString y), r (toString cr), fill "yellow" ] []
+                    Svg.circle [ cx (String.fromInt x), cy (String.fromInt y), r (String.fromInt cr), fill "yellow" ] []
 
                 Rect (Coord cx cy) cw ch ->
                     Svg.rect [] []
     in
-        Svg.g []
-            [ Svg.path
-                [ d ((List.concat >> pathDefStr) [ body, tail, tailLow, bodyLow ])
-                , fill "black"
-                , strokeWidth "1"
-                , stroke "black"
-                ]
-                []
-            , Svg.circle
-                [ cx (toString (getX (rel (coords.eye))))
-                , cy (toString (getY (rel (coords.eye))))
-                , r "5"
-                , fill "white"
-                ]
-                []
-
-            -- , Svg.g [] (List.map shapeToSvg relShapes)
+    Svg.g []
+        [ Svg.path
+            [ d ((List.concat >> pathDefStr) [ body, tail, tailLow, bodyLow ])
+            , fill "black"
+            , strokeWidth "1"
+            , stroke "black"
             ]
+            []
+        , Svg.circle
+            [ cx (String.fromInt (getX (rel coords.eye)))
+            , cy (String.fromInt (getY (rel coords.eye)))
+            , r "5"
+            , fill "white"
+            ]
+            []
+
+        -- , Svg.g [] (List.map shapeToSvg relShapes)
+        ]
 
 
 whaleShapes : Whale -> Int -> List Shape
@@ -521,15 +538,15 @@ whaleShapes whale globalPhase =
         shift (Coord x y) dx dy =
             Coord (x + dx) (y + dy)
     in
-        [ Circle (shift coords.start -10 0) 10
-        , Circle (shift coords.topTailEnd 16 -6) 10
+    [ Circle (shift coords.start -10 0) 10
+    , Circle (shift coords.topTailEnd 16 -6) 10
 
-        -- , Circle coords.lowTailEnd 10
-        , Circle (shift coords.lowTailStart 18 4) 10
-        , Circle (shift coords.start -71 (-54 + (globalPhase // 20))) 30
-        , Circle (shift coords.start -72 (26 + (globalPhase // 20))) 40
-        , Circle (shift coords.start -110 (27 + (globalPhase // 4))) 40
-        ]
+    -- , Circle coords.lowTailEnd 10
+    , Circle (shift coords.lowTailStart 18 4) 10
+    , Circle (shift coords.start -71 (-54 + (globalPhase // 20))) 30
+    , Circle (shift coords.start -72 (26 + (globalPhase // 20))) 40
+    , Circle (shift coords.start -110 (27 + (globalPhase // 4))) 40
+    ]
 
 
 obstaclesView : Obstacles -> Bounds -> Int -> Int -> Html Msg
@@ -544,10 +561,10 @@ obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist 
                     ix
 
         isActive obstacle =
-            (oStart obstacle) < dist + (bx2 - bx1) && (oStart obstacle) + 1025 > dist
+            oStart obstacle < dist + (bx2 - bx1) && oStart obstacle + 1025 > dist
 
         active =
-            List.filter (isActive) obstacles
+            List.filter isActive obstacles
 
         renderShape start shape =
             case shape of
@@ -566,26 +583,28 @@ obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist 
                 fx1 =
                     if direction == -1 then
                         bx1 + start + x1 - dist
+
                     else
                         bx2 - start - w - x1 + dist
 
                 fy1 =
                     y1
             in
-                Svg.rect [ x (toString fx1), y (toString fy1), width (toString w), height (toString h), fill "red" ] []
+            Svg.rect [ x (String.fromInt fx1), y (String.fromInt fy1), width (String.fromInt w), height (String.fromInt h), fill "red" ] []
 
         renderImageObstacle src ix iy iw ih clr =
             let
                 fx =
                     if direction == -1 then
                         bx1 + ix - dist
+
                     else
                         bx2 - iw - ix + dist
 
                 fy1 =
                     y1
             in
-                Svg.image [ x (toString fx), y (toString iy), width (toString iw), height (toString ih), xlinkHref src ] []
+            Svg.image [ x (String.fromInt fx), y (String.fromInt iy), width (String.fromInt iw), height (String.fromInt ih), xlinkHref src ] []
 
         --Svg.g []
         --  [ Svg.rect [x (toString fx), y (toString iy), width (toString iw), height (toString ih), stroke clr, strokeWidth "2", fill "none"] []
@@ -597,9 +616,9 @@ obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist 
                     Svg.g [] (List.map (\s -> renderShape start s) shapes)
 
                 ImageObstacle src ix iy iw ih clr ->
-                    (renderImageObstacle src ix iy iw ih clr)
+                    renderImageObstacle src ix iy iw ih clr
     in
-        Svg.g [] (List.map render active)
+    Svg.g [] (List.map render active)
 
 
 victory : Model -> Html Msg
@@ -621,6 +640,7 @@ victory model =
             , Svg.text_ [ x "1000", y "600", fontSize "50" ] [ Svg.text "Kód je: Math.floor(π*1000)" ]
             , Svg.image [ xlinkHref "img/vyhra.png", width "450", height "223", x "1075", y "290" ] []
             ]
+
     else
         Svg.g [] []
 
@@ -644,5 +664,6 @@ gameControls model =
                 []
             , Svg.text_ [ x "900", y "480", fontSize "80" ] [ Svg.text "Bum. Zkuste to znovu." ]
             ]
+
     else
         Svg.g [] []

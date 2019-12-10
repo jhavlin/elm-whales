@@ -1,4 +1,4 @@
-module Obstacles exposing (..)
+module Obstacles exposing (Obstacle(..), Obstacles, Shape(..), Shapes, leftGameObstacles, rightGameObstacles)
 
 import Space exposing (..)
 
@@ -25,7 +25,7 @@ leftGameObstacles : Obstacles
 leftGameObstacles =
     [ ImageObstacle "img/hoblovacka.png" 0 100 (174 * 2) (167 * 2) "blue"
     , CompoundObstacle 420 [ Rect (Coord 0 700) 160 210 ]
-    , ImageObstacle "img/pivo.png" 730 200 (716) (404) "blue"
+    , ImageObstacle "img/pivo.png" 730 200 716 404 "blue"
     , CompoundObstacle 1900
         [ Rect (Coord 0 90) 50 50
         , Rect (Coord 20 260) 50 40
@@ -33,8 +33,8 @@ leftGameObstacles =
         , Rect (Coord 60 680) 50 50
         , Rect (Coord 60 850) 50 40
         ]
-    , ImageObstacle "img/ux.png" 2400 90 (281) (504) "blue"
-    , ImageObstacle "img/penize.png" 3150 150 (679) (723) "blue"
+    , ImageObstacle "img/ux.png" 2400 90 281 504 "blue"
+    , ImageObstacle "img/penize.png" 3150 150 679 723 "blue"
     , CompoundObstacle 4300
         [ Rect (Coord 0 0) 50 300
         , Rect (Coord 0 600) 50 300
@@ -44,8 +44,8 @@ leftGameObstacles =
 
 rightGameObstacles : Obstacles
 rightGameObstacles =
-    [ ImageObstacle "img/veggie.png" 0 100 (487) (306) "blue"
-    , ImageObstacle "img/pruvodce.png" 900 280 (733) (600) "blue"
+    [ ImageObstacle "img/veggie.png" 0 100 487 306 "blue"
+    , ImageObstacle "img/pruvodce.png" 900 280 733 600 "blue"
     , CompoundObstacle 2200
         [ Rect (Coord 0 110) 250 50
         , Rect (Coord 0 250) 250 45
@@ -54,7 +54,7 @@ rightGameObstacles =
         , Rect (Coord 0 700) 250 30
         , Rect (Coord 0 870) 250 20
         ]
-    , ImageObstacle "img/voldemort.png" 2935 100 (501) (535) "blue"
-    , ImageObstacle "img/chips1.png" 3866 0 (733) (300) "blue"
-    , ImageObstacle "img/chips2.png" 3867 599 (731) (301) "blue"
+    , ImageObstacle "img/voldemort.png" 2935 100 501 535 "blue"
+    , ImageObstacle "img/chips1.png" 3866 0 733 300 "blue"
+    , ImageObstacle "img/chips2.png" 3867 599 731 301 "blue"
     ]
