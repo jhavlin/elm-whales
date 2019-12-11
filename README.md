@@ -1,2 +1,5 @@
 # elm-whales
-Just for Elm language learning
+
+Simple web game for two players on one computer.
+
+Can be played here: https://primitiweb.cz/velrybario/

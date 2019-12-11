@@ -11,7 +11,7 @@ import Obstacles exposing (..)
 import Space exposing (..)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
-import Time exposing (Posix, every, posixToMillis, millisToPosix, toSecond)
+import Time exposing (Posix, every, millisToPosix, posixToMillis, toSecond)
 
 
 main =
@@ -590,7 +590,7 @@ obstaclesView obstacles (Bounds (Coord bx1 by1) (Coord bx2 by2)) direction dist 
                 fy1 =
                     y1
             in
-            Svg.rect [ x (String.fromInt fx1), y (String.fromInt fy1), width (String.fromInt w), height (String.fromInt h), fill "red" ] []
+            Svg.rect [ x (String.fromInt fx1), y (String.fromInt fy1), width (String.fromInt w), height (String.fromInt h), fill "#042967" ] []
 
         renderImageObstacle src ix iy iw ih clr =
             let
@@ -637,8 +637,7 @@ victory model =
                 , ry "10"
                 ]
                 []
-            , Svg.text_ [ x "1000", y "600", fontSize "50" ] [ Svg.text "Kód je: Math.floor(π*1000)" ]
-            , Svg.image [ xlinkHref "img/vyhra.png", width "450", height "223", x "1075", y "290" ] []
+            , Svg.image [ xlinkHref "img/game/win.png", width "450", height "223", x "1075", y "330" ] []
             ]
 
     else
