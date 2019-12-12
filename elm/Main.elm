@@ -637,7 +637,7 @@ victory model =
                 , ry "10"
                 ]
                 []
-            , Svg.image [ xlinkHref "img/game/win.png", width "450", height "223", x "1075", y "330" ] []
+            , Svg.image [ xlinkHref "img/game/win.png", width "900", height "320", x "850", y "290" ] []
             ]
 
     else
@@ -661,7 +661,7 @@ gameControls model =
                 , fillOpacity "0.85"
                 ]
                 []
-            , Svg.text_ [ x "900", y "480", fontSize "80" ] [ Svg.text "Bum. Zkuste to znovu." ]
+            , Svg.text_ [ x "50%", y "50%", dominantBaseline "middle", textAnchor "middle", fontSize "80" ] [ Svg.text "Bum. Zkuste to znovu." ]
             ]
 
     else
